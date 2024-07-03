@@ -5,6 +5,8 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 
 import javax.activation.DataHandler;
@@ -69,34 +71,49 @@ public class ObjetoEnviaEmail {
 		message.setRecipients(Message.RecipientType.TO, toUser);/* Email de destino */
 		message.setSubject(assuntoEmail);/* Assunto do e-mail */
 
-		//Parte 1 do e-mail que é texto e a descrição do e-mail
+		// Parte 1 do e-mail que é texto e a descrição do e-mail
 		MimeBodyPart corpoEmail = new MimeBodyPart();
-		
+
 		if (envioHTML) {
 			corpoEmail.setContent(textoEmail, "text/html; charset=utf-8");
 		} else {
 			corpoEmail.setText(textoEmail);
 		}
-		
-		//Parte 2 do e-mail que são os anexo em PDF
-		MimeBodyPart anexoEmail = new MimeBodyPart();
-		
-		//Onde é passado o simuladorDePdf você passa o seu arquivo gravado no banco de dados
-		anexoEmail.setDataHandler(new DataHandler(new ByteArrayDataSource(simuladorDePDF(), "application/pdf")));
-		anexoEmail.setFileName("anexoemail.pdf");
-		
+
+		List<FileInputStream> arquivos = new ArrayList<FileInputStream>();
+		arquivos.add(simuladorDePDF());
+		arquivos.add(simuladorDePDF());
+		arquivos.add(simuladorDePDF());
+		arquivos.add(simuladorDePDF());
+
 		Multipart multipart = new MimeMultipart();
 		multipart.addBodyPart(corpoEmail);
-		multipart.addBodyPart(anexoEmail);
-		
+
+		int index = 0;
+		for (FileInputStream fileInputStream : arquivos) {
+
+			// Parte 2 do e-mail que são os anexo em PDF
+			MimeBodyPart anexoEmail = new MimeBodyPart();
+
+			// Onde é passado o simuladorDePdf você passa o seu arquivo gravado no banco de
+			// dados
+			anexoEmail.setDataHandler(new DataHandler(new ByteArrayDataSource(fileInputStream, "application/pdf")));
+			anexoEmail.setFileName("anexoemail" + index + ".pdf");
+
+			multipart.addBodyPart(anexoEmail);
+			
+			index++;
+		}
+
 		message.setContent(multipart);
-		
+
 		Transport.send(message);
 	}
-	
-	//Esse método simula o PDF ou qualquer arquivo que possa ser enviado por anexo no email.
+
+	// Esse método simula o PDF ou qualquer arquivo que possa ser enviado por anexo
+	// no email.
 	// Você pode pegar o arquivo no seu banco de dados
-	private FileInputStream simuladorDePDF() throws Exception{
+	private FileInputStream simuladorDePDF() throws Exception {
 		Document document = new Document();
 		File file = new File("fileanexo.pdf");
 		file.createNewFile();
@@ -104,7 +121,7 @@ public class ObjetoEnviaEmail {
 		document.open();
 		document.add(new Paragraph("Conteúdo do PDF anexo com Java Mail, esse texto é do PDF"));
 		document.close();
-		
+
 		return new FileInputStream(file);
 	}
 }
